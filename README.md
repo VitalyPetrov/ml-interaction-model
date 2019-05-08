@@ -5,7 +5,7 @@ Typical usage scenario:
 
 - create directories storing the simulations i/o data
 
-'''bash
+'''sh
 python init_random_structures.py
 '''
 
@@ -13,6 +13,6 @@ python init_random_structures.py
 
 - process the simulation data output and train interaction model:
 
-'''bash
+'''sh
 python train_model.py
 '''
