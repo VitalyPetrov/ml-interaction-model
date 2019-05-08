@@ -5,14 +5,14 @@ Typical usage scenario:
 
 - create directories storing the simulations i/o data
 
-'''sh
+```sh
 python init_random_structures.py
-'''
+```
 
-- (optional) specify/implement your interaction model in interaction_models.py file
+- [optional] specify/implement your interaction model in interaction_models.py file
 
 - process the simulation data output and train interaction model:
 
-'''sh
+```sh
 python train_model.py
-'''
+```
