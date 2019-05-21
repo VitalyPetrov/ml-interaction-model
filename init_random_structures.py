@@ -7,6 +7,7 @@ from ase.calculators.calculator import CalculationFailed
 from ase.io import Trajectory
 from shutil import copyfile, rmtree
 
+
 def espresso_calculator(element):
     """
     Returns the ESPRESSO calculator object
@@ -14,31 +15,33 @@ def espresso_calculator(element):
     pseudopotentials = {'Ar': 'ar_pbe.UPF', 'Cu': 'cu_pbe.UPF', 'Li': 'li_pbe.UPF', 'N': 'n_pbe.UPF'}
 
     espresso_settings = {
-                    'pseudo_dir' : './',
-                    'input_dft' : 'RVV10',
-                    'prefix' : f'{element}',
-                    'electron_maxstep' : 100000,
-                    'tstress' : False,
-                    'tprnfor' : False,
-                    'verbosity' : 'low',
-                    'occupations' : 'smearing',
-                    'degauss' : 0.05,
-                    'smearing' : 'marzari-vanderbilt',
-                    'ecutwfc' : 100
-                    }
-    espresso_calculator = Espresso(restart = None, pseudopotentials = pseudopotentials,
-                                    input_data = espresso_settings)
+        'pseudo_dir': './',
+        'input_dft': 'RVV10',
+        'prefix': f'{element}',
+        'electron_maxstep': 100000,
+        'tstress': False,
+        'tprnfor': False,
+        'verbosity': 'low',
+        'occupations': 'smearing',
+        'degauss': 0.05,
+        'smearing': 'marzari-vanderbilt',
+        'ecutwfc': 100
+    }
+    espresso_calculator = Espresso(restart=None, pseudopotentials=pseudopotentials,
+                                   input_data=espresso_settings)
 
     return espresso_calculator
 
+
 def make_simulation_dirs(num_dirs, prefix='simulation', pp_name='pp.data', override=False):
     """ 
-    Creates {num_dirs} of directories storing the simulation i/o data 
+    Creates {num_dirs} of directories storing the simulation i/o data
+    @param num_dirs : number of simulation`s <-> training set size
     @param prefix : naming pattern for directories
     @param pp_name : filename of the pseudopotential to use in simulation
     @param override : specify do you want to override already existing directories
     """
-    for idx in range(train_size):
+    for idx in range(num_dirs):
         dir_name = f'{prefix}_{idx}'
         try:
             # create the storing directory
@@ -56,21 +59,23 @@ def make_simulation_dirs(num_dirs, prefix='simulation', pp_name='pp.data', overr
                 os.mkdir(dir_name)
                 copyfile(f'{os.getcwd()}/pseudo/{pp_name}', f'{os.getcwd()}/{dir_name}/{pp_name}')
                 copyfile(f'{os.getcwd()}/pseudo/rVV10_kernel_table', f'{os.getcwd()}/{dir_name}/rVV10_kernel_table')
-                
+
+
 def create_random_trimer(element):
     """ 
     Creates three randomly distributed atoms in the simulation cell
     @param element: chemical element symbol
     """
-    simulation_cell = [ [16., 0., 0.], [0., 16., 0.], [0., 0., 16.] ]
+    simulation_cell = [[16., 0., 0.], [0., 16., 0.], [0., 0., 16.]]
 
     # creates list of random coordinates for all 3 atoms
     # based on "standard normal” distribution
     random_positions = 2.0 * np.random.randn(3, 3) + 8.0
     # and finally the atoms object
     atoms = Atoms(f'{element}', calculator=espresso_calculator(element), pbc=False,
-                positions=random_positions, cell=simulation_cell)
+                  positions=random_positions, cell=simulation_cell)
     return atoms
+
 
 def generate_input_scripts(atoms):
     """
@@ -87,10 +92,10 @@ def generate_input_scripts(atoms):
 
 if __name__ == "__main__":
     # User-defined params
-    train_size = 100 # training set size
-    element = '3Cu' # which atoms to simulate
-    pp_name = 'cu_pbe.UPF' # filename of the pseudopotential in pseudo/ folder
-    configurations = Trajectory('configurations.traj', 'w') # container for all the training configurations
+    train_size = 100  # training set size
+    element = '3Cu'  # which atoms to simulate
+    pp_name = 'cu_pbe.UPF'  # filename of the pseudopotential in pseudo/ folder
+    configurations = Trajectory('configurations.traj', 'w')  # container for all the training configurations
     #
 
     make_simulation_dirs(num_dirs=train_size, prefix=element, pp_name=pp_name, override=True)

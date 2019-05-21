@@ -1,17 +1,16 @@
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------#
 # Performs potential energy surface (PES) model training utilizing
 # numerical optimization techniques
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------#
 import numpy as np
-import fnmatch
 
 from interaction_models import many_body_morse
 from scipy.optimize import curve_fit
 from glob import glob
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
-from ase import Atoms
 from ase.io import read
+
 
 class InteractionModelTraining:
     """ 
@@ -20,6 +19,7 @@ class InteractionModelTraining:
     @param dir_names: naming pattern for the simulation directories
     @param prefix: prefix name of output file <-> job title on launch script
     """
+
     def __init__(self, dir_names='pwscf', prefix='espresso'):
         """
         @param dir_names: naming pattern for the simulation directories
@@ -33,8 +33,8 @@ class InteractionModelTraining:
         # Interatomic model coeffs
         self.model_coeffs = None
 
-
-    def __get_pairwise_distances(self, atoms):
+    @staticmethod
+    def __get_pairwise_distances(atoms):
         """
         Returns the list of the pairwise distances between all the atoms
         @param atoms: ASE Atoms object
@@ -49,12 +49,12 @@ class InteractionModelTraining:
         simulation_dirs = glob(f'{self.dir_names}*')
         # read Atoms object from each output file
         configurations = []
-        for dir in simulation_dirs:
+        for directory in simulation_dirs:
             try:
-                fout = glob(f'{dir}/{self.prefix}.o*')[0]
+                fout = glob(f'{directory}/{self.prefix}.o*')[0]
                 configurations.append(read(fout))
             except IndexError:
-                print(f'Invalid output file on directory: {dir}. This directory is ignored')
+                print(f'Invalid output file on directory: {directory}. This directory is ignored')
 
         distances = [self.__get_pairwise_distances(configuration) for configuration in configurations]
         ref_energies = [configuration.get_potential_energy() for configuration in configurations]
@@ -81,7 +81,6 @@ class InteractionModelTraining:
             return mean_squared_error(self.ref_energies, predicted_energies)
         elif metric == 'MAE':
             return mean_absolute_error(self.ref_energies, predicted_energies)
-
 
 
 if __name__ == "__main__":

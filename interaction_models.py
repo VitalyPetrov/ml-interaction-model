@@ -1,9 +1,10 @@
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Store the spherically symmetrical interaction models calculators  
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 import numpy as np
 import matplotlib.pyplot as plt
+
 
 def morse_model(distance, equil_distance=1.0, well_depth=1.0, width=1.0):
     """
@@ -13,7 +14,9 @@ def morse_model(distance, equil_distance=1.0, well_depth=1.0, width=1.0):
     @param well_depth: interaction energy value on the equilibrium separation distance
     @param width: ontrols the 'width' of the potential (the smaller width is, the larger the well)
     """
-    return well_depth * ( np.exp(-2 * width * (distance - equil_distance)) - 2 * np.exp(-width * (distance - equil_distance)) )
+    return well_depth * (
+                np.exp(-2 * width * (distance - equil_distance)) - 2 * np.exp(-width * (distance - equil_distance)))
+
 
 def many_body_morse(distances, equil_distance, well_depth, width):
     """
@@ -23,7 +26,9 @@ def many_body_morse(distances, equil_distance, well_depth, width):
     @param well_depth: interaction energy value on the equilibrium separation distance
     @param width: ontrols the 'width' of the potential (the smaller width is, the larger the well)
     """
-    return [sum([morse_model(distance, equil_distance, well_depth, width) for distance in distances_list]) / 2 for distances_list in distances]
+    return [sum([morse_model(distance, equil_distance, well_depth, width) for distance in distances_list]) / 2 for
+            distances_list in distances]
+
 
 if __name__ == "__main__":
     distancies = np.linspace(0.2, 15.0, 100)
