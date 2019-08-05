@@ -1,20 +1,23 @@
-# ------------------------------------------------------------------------------#
+# ------------------------------------------------------------------------------
 # Performs potential energy surface (PES) model training utilizing
 # numerical optimization techniques
-# ------------------------------------------------------------------------------#
+# ------------------------------------------------------------------------------
 import numpy as np
+import fnmatch
 
 from interaction_models import many_body_morse
 from scipy.optimize import curve_fit
 from glob import glob
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.model_selection import train_test_split
 
+from ase import Atoms
 from ase.io import read
-
+from itertools import combinations
 
 class InteractionModelTraining:
-    """ 
-    Interatomic potenital training on the results of DFT simulations 
+    """
+    Interatomic potenital training on the results of DFT simulations
     To initialize, specify:
     @param dir_names: naming pattern for the simulation directories
     @param prefix: prefix name of output file <-> job title on launch script
@@ -28,18 +31,37 @@ class InteractionModelTraining:
         self.dir_names = dir_names
         self.prefix = prefix
 
+        # Vertex angles in order to account three-body interactions
+        self.vertex_angles = None
+
         # Reference pairwise distances and energies
         self.distances, self.ref_energies = self.__process_output()
+
+        # Train-test split of reference data to evaluate error
+        self.train_distances, self.test_distances, self.train_energies, self.test_energies = train_test_split(
+            self.distances,
+            self.ref_energies,
+            train_size=0.8)
+
         # Interatomic model coeffs
         self.model_coeffs = None
 
-    @staticmethod
-    def __get_pairwise_distances(atoms):
+    def __get_pairwise_distances(self, atoms):
         """
         Returns the list of the pairwise distances between all the atoms
         @param atoms: ASE Atoms object
         """
         return [dist for dist in np.unique(atoms.get_all_distances()) if dist != 0.]
+
+    def __get_vertex_angles(self, atoms):
+        """
+        Returns the list of angles between atoms for each of 3 vertexes
+        :param atoms: ASE Atoms object
+        :return: [*, *, *] list of angles corresponding to given $atoms configuration
+        """
+        relative_positions = [first - second for first, second in combinations(atoms.get_positions(), 2)]
+        scaled_positions = map(lambda vec: vec / np.linalg.norm(vec), relative_positions)
+        return [np.arccos(np.clip(np.dot(pos_i, pos_j), -1.0, 1.0)) for pos_i, pos_j in combinations(scaled_positions, 2)]
 
     def __process_output(self):
         """
@@ -49,25 +71,29 @@ class InteractionModelTraining:
         simulation_dirs = glob(f'{self.dir_names}*')
         # read Atoms object from each output file
         configurations = []
-        for directory in simulation_dirs:
+        for dir in simulation_dirs:
             try:
-                fout = glob(f'{directory}/{self.prefix}.o*')[0]
+                fout = glob(f'{dir}/{self.prefix}.o*')[0]
                 configurations.append(read(fout))
-            except IndexError:
-                print(f'Invalid output file on directory: {directory}. This directory is ignored')
+            except (IndexError, StopIteration):
+                print(f'Invalid output file on directory: {dir}. This directory is ignored')
 
         distances = [self.__get_pairwise_distances(configuration) for configuration in configurations]
-        ref_energies = [configuration.get_potential_energy() for configuration in configurations]
+        ref_energies = [configuration.get_potential_energy() / 13.56 for configuration in configurations]
+        self.vertex_angles = [self.__get_vertex_angles(configuration) for configuration in configurations]
 
         return distances, ref_energies
 
     def fit(self):
         """
-        Performs model parameters fitting based on the data from QE simulations 
+        Performs model parameters fitting based on the data from QE simulations
         in order to obtain trained model
-        Returns the optimal parameters values
+        Return the optimal parameters values
         """
-        self.model_coeffs, _ = curve_fit(many_body_morse, self.distances, self.ref_energies)
+        self.model_coeffs, _ = curve_fit(many_body_morse,
+                                         self.train_distances, self.train_energies,
+                                         bounds=(0., [np.inf, np.inf, np.inf])
+                                         )
         return self.model_coeffs
 
     def evaluate_error(self, metric='MSE'):
@@ -75,15 +101,21 @@ class InteractionModelTraining:
         Compute the prediction error corresponding to certain metric
         @param metric: can be one of 'MSE'(mean square error, default) or 'MAE' (mean absolute error)
         """
-        predicted_energies = many_body_morse(self.distances, *self.model_coeffs)
+        predicted_energies = many_body_morse(self.test_distances, *self.model_coeffs)
 
         if metric == 'MSE':
-            return mean_squared_error(self.ref_energies, predicted_energies)
+            return mean_squared_error(self.test_energies, predicted_energies)
         elif metric == 'MAE':
-            return mean_absolute_error(self.ref_energies, predicted_energies)
+            return mean_absolute_error(self.test_energies, predicted_energies)
 
 
 if __name__ == "__main__":
     model_training = InteractionModelTraining(dir_names='3Cu', prefix='pes_espresso')
-    print(f'Coeffs values: {model_training.fit()}')
-    print(f'Error: {model_training.evaluate_error()}')
+    # Perform parameters fitting
+    equil_dist, well_depth, width = model_training.fit()
+    print(f'\nEquilibrium separation distance: {equil_dist} Angstrom\n'
+          f'Well depth: {well_depth} Ry\n'
+          f'Exponential factor: {width}\n')
+    #
+    print(f'Error: {model_training.evaluate_error(metric="MAE")} Ry')
+    print(f'Mean energy: {np.mean(model_training.ref_energies)} Ry')
