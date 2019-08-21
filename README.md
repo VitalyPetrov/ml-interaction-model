@@ -3,6 +3,12 @@ Machine learning (ML)-based framework to train interaction models between atoms
 
 Typical usage scenario:
 
+- create pseudo/ folder and copy your pseudopotential file in it
+
+```sh
+mkdir pseudo && cp <your-pp-file> pseudo/<your-pp-file>
+```
+
 - create directories storing the simulations i/o data
 
 ```sh
