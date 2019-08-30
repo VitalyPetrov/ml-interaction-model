@@ -107,9 +107,22 @@ class InteractionModelTraining:
 
     def plot_energy_distributions(self):
         """
+        Plot the obtained energy values distribution in dataset
         """
-        plt.hist(self.train_energies)
-        plt.hist(self.test_energies)
+        plt.rcParams['axes.labelsize'] = 14
+        plt.rcParams['axes.titlesize'] = 14
+        plt.rcParams['xtick.labelsize'] = 12
+        plt.rcParams['ytick.labelsize'] = 12
+        plt.rcParams["patch.force_edgecolor"] = True
+        plt.rcParams['axes.edgecolor'] = 'black'
+
+        plt.hist(self.train_energies, bins=15, label='Train subset')
+        plt.hist(self.test_energies, bins=15, label='Test subset')
+
+        plt.xlabel('Energy, Ry')
+        plt.ylabel('Samples count')
+
+        plt.legend(fontsize=14)
         plt.show()
 
     def evaluate_error(self, metric='MSE'):
