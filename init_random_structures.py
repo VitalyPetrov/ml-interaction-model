@@ -11,6 +11,8 @@ from itertools import combinations
 
 def espresso_calculator(element):
     """
+    Preprocessor to generate input scrit file for Quantum Espresso code
+
     Returns the ESPRESSO calculator object
     """
     pseudopotentials = {'Ar': 'ar_pbe.UPF', 'Cu': 'cu_pbe.UPF', 'Li': 'li_pbe.UPF', 'N': 'n_pbe.UPF'}
@@ -25,6 +27,8 @@ def espresso_calculator(element):
                     'verbosity': 'low',
                     'occupations': 'smearing',
                     'degauss': 0.05,
+                    'nspin': 2,
+                    'starting_magnetization': 1,
                     'smearing': 'marzari-vanderbilt',
                     'ecutwfc': 100
                     }
@@ -76,7 +80,7 @@ def create_random_trimer(element, separations_range):
     min_dist, max_dist = separations_range
     # filter the random positions set until the desired distances range is achieved
     while min(get_pairwise_distances(random_positions)) <= min_dist or max(get_pairwise_distances(random_positions)) >= max_dist:
-        random_positions = 4.15 * np.random.randn(3, 3) + 15.0
+        random_positions = 4.15 * np.random.random_sample(size=(3, 3)) + 15.0
     
     # and finally the atoms object
     atoms = Atoms(f'{element}', calculator=espresso_calculator(element), pbc=False,
@@ -145,7 +149,7 @@ def generate_input_scripts(atoms):
 
 if __name__ == "__main__":
     # User-defined params
-    min_dist, max_dist = 1.75, 3.25 # limits for separation distance between atoms
+    min_dist, max_dist = 1.9, 3.05 # limits for separation distance between atoms
     train_size = 100 # training set size
     element = '3Cu' # which atoms to simulate
     pp_name = 'cu_pbe.UPF' # filename of the pseudopotential in pseudo/ folder

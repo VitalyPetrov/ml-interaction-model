@@ -1,5 +1,5 @@
 #!/bin/sh
-#PBS -l nodes=1:ppn=16,walltime=3:00:00
+#PBS -l nodes=1:ppn=16,walltime=5:00:00
 #PBS -N pes_espresso
 #PBS -q batch
 #PBS -j oe

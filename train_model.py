@@ -44,7 +44,7 @@ class InteractionModelTraining:
         self.train_distances, self.test_distances, self.train_energies, self.test_energies = train_test_split(
             self.distances,
             self.ref_energies,
-            train_size=0.8)
+            test_size=0.2)
 
         # Interatomic model coeffs
         self.model_coeffs = None
@@ -87,7 +87,7 @@ class InteractionModelTraining:
                 print(f'Invalid output file on directory: {dir}. This directory is ignored')
 
         distances = [self.__get_pairwise_distances(configuration) for configuration in configurations]
-        ref_energies = [(configuration.get_potential_energy() - 3 * single_atom_energy) / 13.56 for configuration in configurations]
+        ref_energies = [configuration.get_potential_energy() - 3 * single_atom_energy for configuration in configurations]
         self.vertex_angles = [self.__get_vertex_angles(configuration) for configuration in configurations]
 
         return distances, ref_energies
@@ -109,6 +109,7 @@ class InteractionModelTraining:
         """
         Plot the obtained energy values distribution in dataset
         """
+        plt.style.use("seaborn-deep")
         plt.rcParams['axes.labelsize'] = 14
         plt.rcParams['axes.titlesize'] = 14
         plt.rcParams['xtick.labelsize'] = 12
@@ -119,7 +120,7 @@ class InteractionModelTraining:
         plt.hist(self.train_energies, bins=15, label='Train subset')
         plt.hist(self.test_energies, bins=15, label='Test subset')
 
-        plt.xlabel('Energy, Ry')
+        plt.xlabel('Energy, eV')
         plt.ylabel('Samples count')
 
         plt.legend(fontsize=14)
@@ -140,13 +141,12 @@ class InteractionModelTraining:
 
 if __name__ == "__main__":
     model_training = InteractionModelTraining(dir_names='3Cu', prefix='pes_espresso')
+    model_training.plot_energy_distributions()
     # Perform parameters fitting
     equil_dist, well_depth, width = model_training.fit()
     print(f'\nEquilibrium separation distance: {equil_dist} Angstrom\n'
-          f'Well depth: {well_depth} Ry\n'
+          f'Well depth: {well_depth} eV\n'
           f'Exponential factor: {width}\n')
     #
-    print(f'Error: {model_training.evaluate_error(metric="MAE")} Ry')
-    print(f'Mean energy: {np.mean(model_training.ref_energies)} Ry')
-
-    model_training.plot_energy_distributions()
+    print(f'Error: {model_training.evaluate_error(metric="MAE")} eV')
+    print(f'Mean energy: {np.mean(model_training.ref_energies)} eV')
